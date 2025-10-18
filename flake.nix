@@ -100,6 +100,79 @@
     );
     in
     perSystemOutputs // {
+      # Home Manager module for systemd user service integration
+      homeManagerModules.default = { config, lib, pkgs, ... }:
+        let
+          cfg = config.services.gotify-desktop;
+          tomlFormat = pkgs.formats.toml { };
+
+          configFile = tomlFormat.generate "config.toml" cfg.settings;
+
+          setupScript = pkgs.writeShellScript "gotify-desktop-setup" ''
+            mkdir -p ''${XDG_CONFIG_HOME:-$HOME/.config}/gotify-desktop
+            ln -sf ${configFile} ''${XDG_CONFIG_HOME:-$HOME/.config}/gotify-desktop/config.toml
+          '';
+        in
+        {
+          options.services.gotify-desktop = {
+            enable = lib.mkEnableOption "Gotify Desktop notification daemon";
+
+            package = lib.mkOption {
+              type = lib.types.package;
+              default = self.packages.${pkgs.system}.default;
+              description = "The gotify-desktop package to use";
+            };
+
+            settings = lib.mkOption {
+              type = tomlFormat.type;
+              default = { };
+              example = lib.literalExpression ''
+                {
+                  gotify = {
+                    url = "wss://gotify.example.com";
+                    # Token can be a string or fetched from a command
+                    token = "YOUR_SECRET_TOKEN";
+                    # Or use: token.command = "pass show gotify/token";
+                    auto_delete = false;
+                  };
+                  notification = {
+                    min_priority = 0;
+                  };
+                  action = {
+                    on_msg_command = "/usr/bin/beep";
+                  };
+                }
+              '';
+              description = ''
+                Configuration for gotify-desktop written to
+                {file}`$XDG_CONFIG_HOME/gotify-desktop/config.toml`.
+
+                See <https://github.com/desbma/gotify-desktop> for supported values.
+              '';
+            };
+          };
+
+          config = lib.mkIf cfg.enable {
+            systemd.user.services.gotify-desktop = {
+              Unit = {
+                Description = "Gotify daemon to send desktop notifications";
+                PartOf = [ "graphical-session.target" ];
+              };
+
+              Service = {
+                ExecStartPre = lib.mkIf (cfg.settings != { }) "${setupScript}";
+                ExecStart = "${cfg.package}/bin/gotify-desktop";
+                Restart = "always";
+                RestartSec = "5s";
+              };
+
+              Install = {
+                WantedBy = [ "graphical-session.target" ];
+              };
+            };
+          };
+        };
+
       # NixOS module for systemd service integration
       nixosModules.default = { config, lib, pkgs, ... }:
         let
