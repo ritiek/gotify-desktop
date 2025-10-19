@@ -144,16 +144,13 @@
           cfg = config.services.gotify-desktop;
           tomlFormat = pkgs.formats.toml { };
           configFile = tomlFormat.generate "config.toml" cfg.settings;
-
-          setupScript = pkgs.writeShellScript "gotify-desktop-setup" ''
-            mkdir -p ''${XDG_CONFIG_HOME:-$HOME/.config}/gotify-desktop
-            ln -sf ${configFile} ''${XDG_CONFIG_HOME:-$HOME/.config}/gotify-desktop/config.toml
-          '';
         in
         {
           options.services.gotify-desktop = mkModuleOptions { inherit lib pkgs tomlFormat; };
 
           config = lib.mkIf cfg.enable {
+            xdg.configFile."gotify-desktop/config.toml".source = configFile;
+
             systemd.user.services.gotify-desktop = {
               Unit = {
                 Description = "Gotify daemon to send desktop notifications";
@@ -161,7 +158,6 @@
               };
 
               Service = {
-                ExecStartPre = lib.mkIf (cfg.settings != { }) "${setupScript}";
                 ExecStart = "${cfg.package}/bin/gotify-desktop";
                 Restart = "always";
                 RestartSec = "5s";
@@ -185,12 +181,15 @@
           options.services.gotify-desktop = mkModuleOptions { inherit lib pkgs tomlFormat; };
 
           config = lib.mkIf cfg.enable {
+            # For NixOS, we need to create the config file per-user
+            # This is a system-level module but creates a user service
+            # Users should prefer the home-manager module instead
             systemd.user.services.gotify-desktop = {
               description = "Gotify daemon to send desktop notifications";
               partOf = [ "graphical-session.target" ];
               wantedBy = [ "graphical-session.target" ];
 
-              preStart = lib.mkIf (cfg.settings != { }) ''
+              preStart = ''
                 mkdir -p ''${XDG_CONFIG_HOME:-$HOME/.config}/gotify-desktop
                 ln -sf ${configFile} ''${XDG_CONFIG_HOME:-$HOME/.config}/gotify-desktop/config.toml
               '';
