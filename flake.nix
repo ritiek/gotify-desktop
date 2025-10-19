@@ -149,6 +149,12 @@
           options.services.gotify-desktop = mkModuleOptions { inherit lib pkgs tomlFormat; };
 
           config = lib.mkIf cfg.enable {
+            assertions = [
+              (lib.hm.assertions.assertPlatform "services.gotify-desktop" pkgs lib.platforms.linux)
+            ];
+
+            home.packages = [ cfg.package ];
+
             xdg.configFile."gotify-desktop/config.toml".source = configFile;
 
             systemd.user.services.gotify-desktop = {
@@ -181,6 +187,8 @@
           options.services.gotify-desktop = mkModuleOptions { inherit lib pkgs tomlFormat; };
 
           config = lib.mkIf cfg.enable {
+            environment.systemPackages = [ cfg.package ];
+
             # For NixOS, we need to create the config file per-user
             # This is a system-level module but creates a user service
             # Users should prefer the home-manager module instead
