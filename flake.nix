@@ -98,6 +98,44 @@
         };
       }
     );
+      # Shared module options
+      mkModuleOptions = { lib, pkgs, tomlFormat }: {
+        enable = lib.mkEnableOption "Gotify Desktop notification daemon";
+
+        package = lib.mkOption {
+          type = lib.types.package;
+          default = self.packages.${pkgs.system}.default;
+          description = "The gotify-desktop package to use";
+        };
+
+        settings = lib.mkOption {
+          type = tomlFormat.type;
+          default = { };
+          example = lib.literalExpression ''
+            {
+              gotify = {
+                url = "wss://gotify.example.com";
+                # Token can be a string or fetched from a command
+                token = "YOUR_SECRET_TOKEN";
+                # Or use: token.command = "pass show gotify/token";
+                auto_delete = false;
+              };
+              notification = {
+                min_priority = 0;
+              };
+              action = {
+                on_msg_command = "/usr/bin/beep";
+              };
+            }
+          '';
+          description = ''
+            Configuration for gotify-desktop written to
+            {file}`$XDG_CONFIG_HOME/gotify-desktop/config.toml`.
+
+            See <https://github.com/desbma/gotify-desktop> for supported values.
+          '';
+        };
+      };
     in
     perSystemOutputs // {
       # Home Manager module for systemd user service integration
@@ -105,7 +143,6 @@
         let
           cfg = config.services.gotify-desktop;
           tomlFormat = pkgs.formats.toml { };
-
           configFile = tomlFormat.generate "config.toml" cfg.settings;
 
           setupScript = pkgs.writeShellScript "gotify-desktop-setup" ''
@@ -114,43 +151,7 @@
           '';
         in
         {
-          options.services.gotify-desktop = {
-            enable = lib.mkEnableOption "Gotify Desktop notification daemon";
-
-            package = lib.mkOption {
-              type = lib.types.package;
-              default = self.packages.${pkgs.system}.default;
-              description = "The gotify-desktop package to use";
-            };
-
-            settings = lib.mkOption {
-              type = tomlFormat.type;
-              default = { };
-              example = lib.literalExpression ''
-                {
-                  gotify = {
-                    url = "wss://gotify.example.com";
-                    # Token can be a string or fetched from a command
-                    token = "YOUR_SECRET_TOKEN";
-                    # Or use: token.command = "pass show gotify/token";
-                    auto_delete = false;
-                  };
-                  notification = {
-                    min_priority = 0;
-                  };
-                  action = {
-                    on_msg_command = "/usr/bin/beep";
-                  };
-                }
-              '';
-              description = ''
-                Configuration for gotify-desktop written to
-                {file}`$XDG_CONFIG_HOME/gotify-desktop/config.toml`.
-
-                See <https://github.com/desbma/gotify-desktop> for supported values.
-              '';
-            };
-          };
+          options.services.gotify-desktop = mkModuleOptions { inherit lib pkgs tomlFormat; };
 
           config = lib.mkIf cfg.enable {
             systemd.user.services.gotify-desktop = {
@@ -178,47 +179,10 @@
         let
           cfg = config.services.gotify-desktop;
           tomlFormat = pkgs.formats.toml { };
-
           configFile = tomlFormat.generate "config.toml" cfg.settings;
         in
         {
-          options.services.gotify-desktop = {
-            enable = lib.mkEnableOption "Gotify Desktop notification daemon";
-
-            package = lib.mkOption {
-              type = lib.types.package;
-              default = self.packages.${pkgs.system}.default;
-              description = "The gotify-desktop package to use";
-            };
-
-            settings = lib.mkOption {
-              type = tomlFormat.type;
-              default = { };
-              example = lib.literalExpression ''
-                {
-                  gotify = {
-                    url = "wss://gotify.example.com";
-                    # Token can be a string or fetched from a command
-                    token = "YOUR_SECRET_TOKEN";
-                    # Or use: token.command = "pass show gotify/token";
-                    auto_delete = false;
-                  };
-                  notification = {
-                    min_priority = 0;
-                  };
-                  action = {
-                    on_msg_command = "/usr/bin/beep";
-                  };
-                }
-              '';
-              description = ''
-                Configuration for gotify-desktop written to
-                {file}`$XDG_CONFIG_HOME/gotify-desktop/config.toml`.
-
-                See <https://github.com/desbma/gotify-desktop> for supported values.
-              '';
-            };
-          };
+          options.services.gotify-desktop = mkModuleOptions { inherit lib pkgs tomlFormat; };
 
           config = lib.mkIf cfg.enable {
             systemd.user.services.gotify-desktop = {
