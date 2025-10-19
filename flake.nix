@@ -160,18 +160,17 @@
             systemd.user.services.gotify-desktop = {
               Unit = {
                 Description = "Gotify daemon to send desktop notifications";
+                Documentation = "https://github.com/desbma/gotify-desktop";
+                After = [ "graphical-session-pre.target" ];
                 PartOf = [ "graphical-session.target" ];
               };
 
               Service = {
                 ExecStart = "${cfg.package}/bin/gotify-desktop";
-                Restart = "always";
-                RestartSec = "5s";
+                Restart = "on-failure";
               };
 
-              Install = {
-                WantedBy = [ "graphical-session.target" ];
-              };
+              Install.WantedBy = [ "graphical-session.target" ];
             };
           };
         };
@@ -194,6 +193,8 @@
             # Users should prefer the home-manager module instead
             systemd.user.services.gotify-desktop = {
               description = "Gotify daemon to send desktop notifications";
+              documentation = [ "https://github.com/desbma/gotify-desktop" ];
+              after = [ "graphical-session-pre.target" ];
               partOf = [ "graphical-session.target" ];
               wantedBy = [ "graphical-session.target" ];
 
@@ -204,8 +205,7 @@
 
               serviceConfig = {
                 ExecStart = "${cfg.package}/bin/gotify-desktop";
-                Restart = "always";
-                RestartSec = "5s";
+                Restart = "on-failure";
               };
             };
           };
