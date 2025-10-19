@@ -105,6 +105,7 @@
         package = lib.mkOption {
           type = lib.types.package;
           default = self.packages.${pkgs.system}.default;
+          defaultText = lib.literalExpression "pkgs.gotify-desktop";
           description = "The gotify-desktop package to use";
         };
 
@@ -146,6 +147,8 @@
           configFile = tomlFormat.generate "config.toml" cfg.settings;
         in
         {
+          meta.maintainers = [ ];
+
           options.services.gotify-desktop = mkModuleOptions { inherit lib pkgs tomlFormat; };
 
           config = lib.mkIf cfg.enable {
@@ -166,7 +169,7 @@
               };
 
               Service = {
-                ExecStart = "${cfg.package}/bin/gotify-desktop";
+                ExecStart = lib.getExe cfg.package;
                 Restart = "on-failure";
               };
 
@@ -204,7 +207,7 @@
               '';
 
               serviceConfig = {
-                ExecStart = "${cfg.package}/bin/gotify-desktop";
+                ExecStart = lib.getExe cfg.package;
                 Restart = "on-failure";
               };
             };
